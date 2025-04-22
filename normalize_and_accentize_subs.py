@@ -7,9 +7,16 @@ import sys
 from tqdm import tqdm
 import json
 import os
+from dotenv import find_dotenv, dotenv_values
 
+dotenv_path = find_dotenv()
 base_url = "https://openrouter.ai/api/v1"
-api_key = "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"
+if not dotenv_path:
+    raise ValueError("Environment file not found.")
+else:
+    api_key = dotenv_values(dotenv_path).get("OPEN_ROUTER_API_KEY")
+    if not api_key:
+        raise ValueError("API key not found in environment variables.")
 model_name = "google/gemini-2.5-flash-preview"
 
 sub_input_file = "D:/Survivor (2000) RePack/Season 2/Survivor - S02E01 - Stranded.srt"
