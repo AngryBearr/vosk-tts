@@ -4,3 +4,4 @@ vosk_tts.egg-info
 __pycache__
 server/tts_service_pb2_grpc.py
 server/tts_service_pb2.py
+runorm_cache

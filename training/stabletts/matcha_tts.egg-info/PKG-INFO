@@ -1,0 +1,58 @@
+Metadata-Version: 2.4
+Name: matcha-tts
+Version: 0.8
+Summary: 🍵 Matcha-TTS: A fast TTS architecture with conditional flow matching
+Home-page: https://shivammehta25.github.io/Matcha-TTS
+Author: Shivam Mehta
+Author-email: shivam.mehta25@gmail.com
+Requires-Python: >=3.9.0
+Description-Content-Type: text/markdown
+License-File: LICENSE
+Requires-Dist: torch>=2.0.0
+Requires-Dist: torchvision>=0.15.0
+Requires-Dist: lightning>=2.0.0
+Requires-Dist: torchmetrics>=0.11.4
+Requires-Dist: hydra-core==1.3.2
+Requires-Dist: hydra-colorlog==1.2.0
+Requires-Dist: hydra-optuna-sweeper==1.2.0
+Requires-Dist: rootutils
+Requires-Dist: pre-commit
+Requires-Dist: rich
+Requires-Dist: pytest
+Requires-Dist: phonemizer
+Requires-Dist: tensorboard
+Requires-Dist: librosa
+Requires-Dist: Cython
+Requires-Dist: numpy
+Requires-Dist: einops
+Requires-Dist: inflect
+Requires-Dist: Unidecode
+Requires-Dist: scipy
+Requires-Dist: torchaudio
+Requires-Dist: matplotlib
+Requires-Dist: pandas
+Requires-Dist: conformer==0.3.2
+Requires-Dist: diffusers
+Requires-Dist: notebook
+Requires-Dist: ipywidgets
+Requires-Dist: gradio==3.43.2
+Requires-Dist: gdown
+Requires-Dist: wget
+Requires-Dist: seaborn
+Dynamic: author
+Dynamic: author-email
+Dynamic: description
+Dynamic: description-content-type
+Dynamic: home-page
+Dynamic: license-file
+Dynamic: requires-dist
+Dynamic: requires-python
+Dynamic: summary
+
+This is a heavily modified codebase from Matcha, StableTTS and StyleTTS2
+
+https://github.com/shivammehta25/Matcha-TTS
+
+https://github.com/KdaiP/StableTTS
+
+https://github.com/yl4579/StyleTTS2
