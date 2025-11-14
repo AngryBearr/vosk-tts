@@ -33,15 +33,11 @@ def plot_spectrogram_to_numpy(spectrogram, filename):
 
 
 def process_text(i: int, text: str, device: torch.device):
-    print(f"[{i}] - Input text: {text}")
     x, bert = text_to_sequence(text, [])
-    x = intersperse(x, 0)
-    bert = intersperse_bert(bert)
-    x = torch.tensor(x, dtype=torch.long, device=device).unsqueeze(0)
+    x = torch.tensor(x, dtype=torch.long, device=device).T.unsqueeze(0)
     bert = torch.stack(bert, dim=0).T.unsqueeze(0).to(device)
     x_lengths = torch.tensor([x.shape[-1]], dtype=torch.long, device=device)
-    x_phones = sequence_to_text(x.squeeze(0).tolist())
-    print(f"[{i}] - Phonetised text: {x_phones}")
+    x_phones = sequence_to_text(x[0,0,:].tolist())
 
     return {"x_orig": text, "x": x, "x_lengths": x_lengths, "x_phones": x_phones, "bert" : bert}
 
@@ -126,11 +122,9 @@ torch.set_printoptions(profile="full")
 torch.set_printoptions(linewidth=200)
 
 def to_waveform(mel, vocoder, denoiser=None):
-#    print (mel)
-#   audio = vocoder(mel).clamp(-1, 1)
+
+#    audio = vocoder(mel).clamp(-1, 1)
     audio = vocoder.decode(mel).clamp(-1, 1)
-#    if denoiser is not None:
-#        audio = denoiser(audio.squeeze(), strength=0.00025).cpu().squeeze()
 
     return audio.cpu().squeeze()
 
@@ -341,6 +335,7 @@ def batched_synthesis(args, device, model, vocoder, denoiser, texts, spk):
             n_timesteps=args.steps,
             temperature=args.temperature,
             spks=spk.expand(b) if spk is not None else spk,
+            bert=text_processed["bert"],
             length_scale=args.speaking_rate,
         )
 
@@ -388,7 +383,7 @@ def unbatched_synthesis(args, device, model, vocoder, denoiser, texts, spk):
             bert=text_processed["bert"],
             length_scale=args.speaking_rate,
         )
-        output["waveform"] = to_waveform(output["mel"], vocoder, denoiser)
+        output["waveform"] = to_waveform(output["mel"], vocoder, denoiser) * 1.5 # Loudness
         # RTF with HiFiGAN
         t = (dt.datetime.now() - start_t).total_seconds()
         rtf_w = t * 22050 / (output["waveform"].shape[-1])
@@ -399,8 +394,8 @@ def unbatched_synthesis(args, device, model, vocoder, denoiser, texts, spk):
 
         location = save_to_folder(base_name, output, args.output_folder)
 
-        output["waveform"] = to_waveform(output["mel_enc"], vocoder, denoiser)
-        location = save_to_folder(prior_base_name, output, args.output_folder)
+#        output["waveform"] = to_waveform(output["mel_enc"], vocoder, denoiser)
+#        location = save_to_folder(prior_base_name, output, args.output_folder)
 
         print(f"[+] Waveform saved: {location}")
 

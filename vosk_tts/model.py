@@ -2,18 +2,16 @@ import os
 import sys
 import datetime
 import json
-import re
 import onnxruntime
 import requests
 import logging
+import re
 
 from urllib.request import urlretrieve
 from zipfile import ZipFile
-from re import match
 from pathlib import Path
 from tqdm import tqdm
-
-from .g2p import convert
+from tokenizers.implementations import BertWordPieceTokenizer
 
 # Remote location of the models and local folders
 MODEL_PRE_URL = "https://alphacephei.com/vosk/models/"
@@ -39,20 +37,30 @@ class Model:
         else:
             model_path = Path(model_path)
 
+        onnx_providers = onnxruntime.get_available_providers()
+        providers = [p for p in onnx_providers if p in ["CUDAExecutionProvider", "CPUExecutionProvider"]]
+
         sess_options = onnxruntime.SessionOptions()
+#        sess_options.log_severity_level = 0
         logging.info(f"Loading model from {model_path}")
-        self.onnx = onnxruntime.InferenceSession(str(model_path / "model.onnx"), sess_options=sess_options, providers=['CPUExecutionProvider'])
+        self.onnx = onnxruntime.InferenceSession(str(model_path / "model.onnx"), sess_options=sess_options, providers=providers)
 
         self.dic = {}
         probs = {}
         for line in open(model_path / "dictionary", encoding='utf-8'):
-           items = line.split()
+           items = line.split(maxsplit=2)
            prob = float(items[1])
            if probs.get(items[0], 0) < prob:
-               self.dic[items[0]] = " ".join(items[2:])
+               self.dic[items[0]] = items[2]
                probs[items[0]] = prob
 
         self.config = json.load(open(model_path / "config.json"))
+
+        if os.path.exists(model_path / "bert/vocab.txt"):
+            self.tokenizer = BertWordPieceTokenizer(vocab=str(model_path / "bert/vocab.txt"), unk_token="[UNK]", lowercase=True)
+            self.bert_onnx = onnxruntime.InferenceSession(str(model_path / "bert/model.onnx"), sess_options=sess_options, providers=providers)
+        else:
+            self.tokenizer = None
 
     def get_model_path(self, model_name, lang):
         if model_name is None:
@@ -84,7 +92,7 @@ class Model:
                 continue
             model_file_list = os.listdir(directory)
             model_file = [model for model in model_file_list if
-                    match(r"vosk-model(-small)?-{}".format(lang), model)]
+                    re.match(r"vosk-model(-small)?-{}".format(lang), model)]
             if model_file != []:
                 return Path(directory, model_file[0])
         response = requests.get(MODEL_LIST_URL, timeout=10)
@@ -121,32 +129,3 @@ class Model:
             return displayed
         return update_to
 
-    def g2p(self, text):
-
-        text = re.sub("—", "-", text)
-
-        pattern = "([,.?!;:\"() ])"
-        phonemes = []
-        for word in re.split(pattern, text.lower()):
-            if word == "":
-                continue
-            if re.match(pattern, word) or word == '-':
-                phonemes.append(word)
-            elif word in self.dic:
-                phonemes.extend(self.dic[word].split())
-            else:
-                phonemes.extend(convert(word).split())
-
-        phoneme_id_map = self.config["phoneme_id_map"]
-        phoneme_ids = []
-        phoneme_ids.extend(phoneme_id_map["^"])
-        phoneme_ids.extend(phoneme_id_map["_"])
-        for p in phonemes:
-            if p in phoneme_id_map:
-                phoneme_ids.extend(phoneme_id_map[p])
-                phoneme_ids.extend(phoneme_id_map["_"])
-        phoneme_ids.extend(phoneme_id_map["$"])
-
-        logging.info(f"Text: {text}")
-        logging.info(f"Phonemes: {phonemes}")
-        return phoneme_ids
